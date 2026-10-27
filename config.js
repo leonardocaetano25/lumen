@@ -4,6 +4,6 @@
 // (Project Settings > API Keys). Use SOMENTE a chave pública ("publishable" / "anon").
 // NUNCA coloque aqui a chave "secret" ou "service_role".
 window.LUMEN_CONFIG = {
-  SUPABASE_URL: "",   // ex.: "https://abcdefgh.supabase.co"
-  SUPABASE_KEY: ""    // ex.: "sb_publishable_..."
+  SUPABASE_URL: "",   // https://sncweehgscbyiduvbdro.supabase.co
+  SUPABASE_KEY: ""    // sb_publishable_xPIVXkhLrf3XonGjOSR_4g_lOXx45De
 };
