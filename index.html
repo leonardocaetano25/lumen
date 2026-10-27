@@ -488,6 +488,8 @@
   .lib-bar > div { height: 100%; background: linear-gradient(90deg, #C9A227, #F0D26B); border-radius: 99px; }
   .deck-current { display: inline-block; font-size: 0.8rem; color: var(--text-muted); background: var(--bg-2); border: 1px solid rgba(212, 175, 55, 0.4); border-radius: 99px; padding: 6px 14px; margin-bottom: 14px; }
   .deck-current b { color: #E9C85A; }
+  footer.note.slogan { font-family: var(--font-display); font-size: 0.95rem; letter-spacing: 0.02em; color: #E9C85A; opacity: 0.85; margin-top: 24px; }
+  footer.note.slogan.warn { font-family: var(--font-ui); font-size: 0.8rem; color: var(--danger); opacity: 1; }
   .lib-badge { font-family: var(--font-ui); font-size: 0.6rem; font-weight: 800; letter-spacing: 0.06em; color: #15110A; background: linear-gradient(135deg, #C9A227, #F0D26B); border-radius: 99px; padding: 2px 8px; vertical-align: middle; margin-left: 6px; }
 </style>
 </head>
@@ -501,7 +503,6 @@
         <h1 class="brand"><svg class="brand-mark" viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1C1C1C"/><stop offset="1" stop-color="#050505"/></linearGradient><linearGradient id="gd" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F6DC7A"/><stop offset="1" stop-color="#C9A227"/></linearGradient><radialGradient id="gl" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#E9C85A" stop-opacity=".5"/><stop offset="1" stop-color="#E9C85A" stop-opacity="0"/></radialGradient></defs><rect width="48" height="48" rx="13" fill="url(#lg)"/><rect x="12.5" y="9.5" width="23" height="29" rx="5" fill="none" stroke="#E9C85A" stroke-opacity=".9" stroke-width="2"/><circle cx="24" cy="24" r="11" fill="url(#gl)"/><path class="logo-star" d="M24 14 L26.4 21.6 L34 24 L26.4 26.4 L24 34 L21.6 26.4 L14 24 L21.6 21.6 Z" fill="url(#gd)"/></svg><span>Lumen</span></h1>
         <div class="subtitle">Seu acervo de estudo em flashcards</div>
       </div>
-      <button class="icon-btn" id="btn-reset-all" title="Zerar progresso">↺</button>
     </header>
 
     <div class="tabbar">
@@ -539,7 +540,7 @@
     <button class="ghost-btn" id="btn-backup">💾 Backup / restaurar progresso</button>
     <button class="ghost-btn" id="btn-clear-classification">Limpar classificações de dificuldade</button>
 
-    <footer class="note" id="save-note">✓ Progresso salvo automaticamente neste dispositivo/navegador.</footer>
+    <footer class="note slogan" id="save-note">Ilumine o que você aprende.</footer>
   </section>
 
   <!-- LIBRARY SCREEN -->
@@ -631,6 +632,7 @@
   <div class="modal-box">
     <h3>💾 Backup do progresso</h3>
     <p>Copie o código abaixo e guarde onde quiser (Notas, WhatsApp, e-mail). Para recuperar o progresso, cole o código no campo e toque em Restaurar.</p>
+    <div class="backup-msg" id="backup-status" style="text-align:left;margin-bottom:10px;"></div>
     <textarea id="backup-text" rows="6" spellcheck="false"></textarea>
     <div class="btn-row">
       <button class="choice-btn right" id="btn-copy">Copiar</button>
@@ -753,14 +755,18 @@
 
   // ---- sincronização com a conta (quando disponível) ----
   function setStatus(kind) {
+    const msgs = {
+      cloud: '☁ Progresso sincronizado com a sua conta (vale em qualquer aparelho).',
+      nolocal: '⚠ O navegador não está guardando dados. Use o 💾 Backup para não perder o progresso.',
+      local: '✓ Salvo neste navegador. O Safari pode apagar com o tempo: guarde o código de backup como garantia.'
+    };
+    const m = document.getElementById('backup-status');
+    if (m) m.textContent = msgs[kind] || '';
     const n = document.getElementById('save-note');
-    if (!n) return;
-    n.classList.remove('warn');
-    if (kind === 'cloud') n.textContent = '☁ Progresso sincronizado com a sua conta (vale em qualquer aparelho).';
-    else if (kind === 'nolocal') {
-      n.classList.add('warn');
-      n.textContent = '⚠ O navegador não está guardando dados. Use o 💾 Backup para não perder o progresso.';
-    } else n.textContent = '✓ Salvo neste navegador. O Safari pode apagar com o tempo: use o 💾 Backup como garantia.';
+    if (n) {
+      n.classList.toggle('warn', kind === 'nolocal');
+      n.textContent = kind === 'nolocal' ? msgs.nolocal : 'Ilumine o que você aprende.';
+    }
   }
 
   function schedulePush() {
@@ -1109,14 +1115,6 @@
     renderHome();
   });
 
-  document.getElementById('btn-reset-all').addEventListener('click', () => {
-    if (!confirm('Isso vai apagar TODO o progresso salvo de TODOS os conjuntos (dificuldades, acertos e erros). Continuar?')) return;
-    progress = {};
-    ALL_CARDS.forEach(c => { progress[c.id] = { difficulty: null, seen: 0, correct: 0, wrong: 0, last: null }; });
-    saveProgress();
-    clearSession();
-    renderHome();
-  });
 
   // Init
   loadProgress();
