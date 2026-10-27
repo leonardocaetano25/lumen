@@ -491,7 +491,18 @@
   footer.note.slogan { font-family: var(--font-display); font-size: 0.95rem; letter-spacing: 0.02em; color: #E9C85A; opacity: 0.85; margin-top: 24px; }
   footer.note.slogan.warn { font-family: var(--font-ui); font-size: 0.8rem; color: var(--danger); opacity: 1; }
   .lib-badge { font-family: var(--font-ui); font-size: 0.6rem; font-weight: 800; letter-spacing: 0.06em; color: #15110A; background: linear-gradient(135deg, #C9A227, #F0D26B); border-radius: 99px; padding: 2px 8px; vertical-align: middle; margin-left: 6px; }
+  .auth-box { margin: auto 0; text-align: center; }
+  .auth-box input, .modal-box input[type=text] { width: 100%; border: 1px solid var(--border); border-radius: 12px; background: var(--bg-2); color: var(--text); padding: 13px; font-size: 1rem; font-family: inherit; margin-bottom: 10px; }
+  .auth-box .subtitle { margin: 6px 0 20px; }
+  .lib-user { display: flex; align-items: center; justify-content: space-between; font-size: 0.78rem; color: var(--text-muted); margin-bottom: 12px; gap: 8px; }
+  .lib-user b { color: #E9C85A; }
+  .row-check { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px; }
+  .admin-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: var(--bg-2); border: 1px solid var(--border); border-radius: 14px; padding: 12px; margin-bottom: 8px; font-size: 0.82rem; }
+  .admin-row select { background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 10px; padding: 8px; font-size: 0.85rem; }
+  .primary-btn:disabled { opacity: 0.45; box-shadow: none; }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
 </head>
 <body>
 <div id="app">
@@ -508,6 +519,7 @@
     <div class="tabbar">
       <button class="tab-btn active" data-tab="home">📖 Estudar</button>
       <button class="tab-btn" data-tab="library">🗂 Meus conteúdos</button>
+      <button class="tab-btn" data-tab="admin" style="display:none;">⚙ Admin</button>
     </div>
 
     <div class="deck-current" id="deck-current"></div>
@@ -554,10 +566,38 @@
     <div class="tabbar">
       <button class="tab-btn active" data-tab="home">📖 Estudar</button>
       <button class="tab-btn" data-tab="library">🗂 Meus conteúdos</button>
+      <button class="tab-btn" data-tab="admin" style="display:none;">⚙ Admin</button>
     </div>
 
+    <div id="lib-user" class="lib-user" style="display:none;"></div>
     <div id="library-list"></div>
-    <button class="ghost-btn" id="btn-new-content" disabled style="opacity:.6;cursor:not-allowed;text-decoration:none;">＋ Novo conteúdo (em breve)</button>
+    <button class="primary-btn" id="btn-new-content" style="margin-top:4px;">＋ Novo conteúdo</button>
+    <div class="backup-msg" id="lib-hint" style="margin-top:8px;"></div>
+  </section>
+
+  <!-- AUTH SCREEN -->
+  <section id="screen-auth" class="screen">
+    <div class="auth-box">
+      <h1 class="brand" style="justify-content:center;"><span>✦ Lumen</span></h1>
+      <div class="subtitle">Entre para acessar seus conteúdos</div>
+      <input id="auth-email" type="email" placeholder="E-mail" autocomplete="email">
+      <input id="auth-pass" type="password" placeholder="Senha (mínimo 6 caracteres)" autocomplete="current-password">
+      <button class="primary-btn" id="btn-login">Entrar</button>
+      <button class="ghost-btn" id="btn-signup">Criar conta (nível Starter)</button>
+      <div class="backup-msg" id="auth-msg"></div>
+    </div>
+  </section>
+
+  <!-- ADMIN SCREEN -->
+  <section id="screen-admin" class="screen">
+    <header><div><h1 class="brand"><span>Administração</span></h1><div class="subtitle">Usuários e níveis de acesso</div></div></header>
+    <div class="tabbar">
+      <button class="tab-btn" data-tab="home">📖 Estudar</button>
+      <button class="tab-btn" data-tab="library">🗂 Meus conteúdos</button>
+      <button class="tab-btn active" data-tab="admin">⚙ Admin</button>
+    </div>
+    <div id="admin-list"></div>
+    <div class="backup-msg" id="admin-msg"></div>
   </section>
 
   <!-- STUDY SCREEN -->
@@ -643,6 +683,22 @@
   </div>
 </div>
 
+<div class="modal" id="modal-content" style="display:none;">
+  <div class="modal-box">
+    <h3 id="nc-title">＋ Novo conteúdo</h3>
+    <div id="nc-name-row"><input type="text" id="nc-name" placeholder="Nome do conjunto (ex.: Inglês básico)"></div>
+    <div class="row-check" id="nc-system-row" style="display:none;"><input type="checkbox" id="nc-system"><label for="nc-system">Baralho do sistema (visível para todos os usuários)</label></div>
+    <p>Uma carta por linha, no formato <b>Pergunta | Resposta</b>. Você também pode colar direto de uma planilha (colunas separadas por tab) ou escolher um arquivo .txt/.csv.</p>
+    <textarea id="nc-text" rows="8" spellcheck="false" placeholder="Qual a capital da França? | Paris"></textarea>
+    <input type="file" id="nc-file" accept=".txt,.csv,.tsv" style="margin-bottom:10px;font-size:0.8rem;">
+    <div class="btn-row">
+      <button class="choice-btn wrong" id="nc-cancel" style="background:var(--border);color:var(--text);">Cancelar</button>
+      <button class="choice-btn right" id="nc-save" style="background:var(--accent);color:#15110A;">Salvar</button>
+    </div>
+    <div class="backup-msg" id="nc-msg"></div>
+  </div>
+</div>
+
 <script id="cards-data-aprendiz" type="application/json">
 [{"id": 101, "q": "Sois Maçom?", "a": "MCTMR (Meus Irmãos Como Tal Me Reconhecem)."}, {"id": 102, "q": "A que é consagrado o grau de Aprendiz?", "a": "A fraternidade humana, exemplificada na união dos irmãos."}, {"id": 103, "q": "Como conseguistes entrar no Templo?", "a": "Por duas pancadas fortes na porta do templo."}, {"id": 104, "q": "Como fostes recebido Maçom?", "a": "Nem nu, nem vestido. Vendaram-me os olhos, tiraram-me todos os metais que representavam o egoísmo do mundo profano, e fui conduzido à porta do Templo por um amigo, que depois conheci como irmão."}, {"id": 105, "q": "Que fizeram para vos instruir?", "a": "O Venerável mestre tomou-me pela mão direita, deu-me o toque, a palavra, e toda a instrução do Grau. Fiz em seguida a primeira lição na Pedra Bruta."}, {"id": 106, "q": "Como terminou cada uma das viagens?", "a": "A 1ª Viagem ao pedestal do 2º. Vigilante, representada pelo elemento Ar, símbolo da vitalidade, emblema natural e própria da vida humana.\nA 2ª Viagem ao pedestal do 1º. Vigilante, representada pelo elemento Água, onde tive às mãos purificadas nas águas do Mar de Bronze;\nA 3ª Viagem: Ao Altar onde tem assento o Venerável mestre, representada pelo elemento Fogo, onde também tive às mãos purificadas nas Chamas da Purificação."}, {"id": 107, "q": "Onde se achavam situadas as portas?", "a": "No Ocidente, entre as colunas J e B."}, {"id": 108, "q": "Que vos disseram quando batestes?", "a": "Quem vem lá? E ouvi alguém responder: Um candidato que quer ser iniciado na ordem maçônica e admitido nos seus augustos mistérios."}, {"id": 109, "q": "Que significam as purificações?", "a": "Que o profano não consegue alcançar por si só, o templo da filosofia."}, {"id": 110, "q": "Que vos deram depois?", "a": "Deram-me um líquido a beber, e inexplicavelmente o doce ser fez amargo, à minha revelia, pois o meu pensamento não sofrera mudança."}, {"id": 111, "q": "Como vos ligastes à Ordem Maçônica?", "a": "Por um juramento e uma consagração."}, {"id": 112, "q": "Que prometestes?", "a": "Nunca revelar o que ouvir ou me for comunicado, como segredo da Instituição, Senão a bom e legítimo Irmão ou dentro de Loja Justa, Perfeita e Regular de Maçons."}, {"id": 113, "q": "Como se reconhece um Maçom?", "a": "Pelos sinais, toques e palavras, além dos atos que praticam."}, {"id": 114, "q": "Como fazeis o sinal?", "a": "Com o corpo ereto, e os pés formando esquadria (Fazer o sinal)."}, {"id": 115, "q": "Como dais a palavra?", "a": "Não vos posso dar, somente soletrar, dai-me a primeira letra e vos darei a segunda (B-OO-Z)."}, {"id": 116, "q": "Que significa ela?", "a": "Força."}, {"id": 117, "q": "Que é o toque?", "a": "É um dos meios universais de reconhecimento entre os Maçons. O Toque lembra a idade do Aprendiz Maçom."}, {"id": 118, "q": "Como estais agora vestido?", "a": "Com um avental."}, {"id": 119, "q": "Que significa o avental?", "a": "Significa que todo maçom tende trabalhar infatigavelmente para a descoberta da verdade e o aperfeiçoamento da humanidade."}, {"id": 120, "q": "Qual é a idade do Aprendiz?", "a": "Três anos."}, {"id": 121, "q": "Como se colocam o esquadro e o compasso?", "a": "O esquadro sobre o compasso na posição de grau, com as pontas do compasso para o Ocidente, em cima do livro das leis."}, {"id": 122, "q": "Qual é o número que domina o grau de Aprendiz?", "a": "Três."}, {"id": 123, "q": "Qual é o tempo de trabalho?", "a": "Do meio-dia à meia noite."}, {"id": 124, "q": "Quais as ferramentas do Aprendiz?", "a": "O Maço e o Cinzel."}, {"id": 125, "q": "Onde trabalham os Aprendizes?", "a": "Na Pedra Bruta."}, {"id": 126, "q": "Onde fostes recebido Maçom?", "a": "Numa loja justa, perfeita e regular."}, {"id": 127, "q": "Que é preciso para que uma loja seja justa e perfeita?", "a": "Que 3 governem, 5 componham e 7 completem."}, {"id": 128, "q": "Que é uma loja regular?", "a": "Sendo justa e perfeita, que obedeça à potência regular da qual recebeu a carta constitutiva e pratique rigorosamente todos os princípios básicos da Maçonaria Universal."}, {"id": 129, "q": "Que se faz em vossa loja?", "a": "Levantam-se Templos à virtude e cavam-se masmorras ao vício."}, {"id": 130, "q": "Como é construída nossa loja?", "a": "Por três partes essenciais: Sala dos Passos Perdidos, Átrio e o Templo propriamente dito. Deve haver ainda a câmara das reflexões. A sua forma é de um quadrilongo ou retângulo alongado.\nO comprimento é do oriente ao ocidente.\nA largura é do sul ao norte.\nA altura é da terra ao céu e a sua profundidade é da superfície ao centro da terra."}, {"id": 131, "q": "Quantos degraus existem entre o piso do Ocidente e do Oriente e quantos conduzem ao trono?", "a": "Sobe-se ao oriente por 04 degraus (força, trabalho, ciência e virtude) e três ao trono (pureza, luz e verdade)."}, {"id": 132, "q": "Quais são os pilares da loja?", "a": "São Três: Sapientia, Salus e Stabilitas. (sabedoria, força e beleza)."}, {"id": 133, "q": "Que significa S. S. S.?", "a": "Sapientia, Salus e Stabilitas (sabedoria, força e beleza)."}, {"id": 134, "q": "Quais são os paramentos de uma loja?", "a": "São dois: Delta Luminoso e o Livro da Lei."}, {"id": 135, "q": "Quais são os ornamentos de uma loja?", "a": "São três. Pavimento mosaico, corda de 81 nós, e o esquadro-compasso."}, {"id": 136, "q": "Quais são as jóias móveis?", "a": "Esquadro, Nível e o Prumo."}, {"id": 137, "q": "Quais são as jóias fixas?", "a": "Pedra Bruta, Pedra Cúbica e a Prancheta da Loja."}, {"id": 138, "q": "Quantas são as colunas?", "a": "Duas: J e B."}, {"id": 139, "q": "Que representam as quatro borlas?", "a": "As quatro virtudes cardeais: Temperança, Justiça, Coragem e Prudência."}, {"id": 140, "q": "Que significa a espada flamejante?", "a": "É o emblema do magistério e instrumento necessário à consagração do Neófito, pois nela soa a Bateria do Grau."}, {"id": 141, "q": "Que é o \"Livro da Lei\"?", "a": "A Bíblia Sagrada."}, {"id": 142, "q": "Que nome damos ao Deus Criador?", "a": "Supremo Arquiteto do Universo."}, {"id": 143, "q": "Onde se abre a Bíblia Sagrada?", "a": "No altar dos juramentos."}, {"id": 144, "q": "Por que as lojas maçônicas são chamadas de Loja de São João?", "a": "São João Batista foi o último patrono das corporações de construtores ou Lojas da Idade Média."}, {"id": 145, "q": "Qual é a virtude essencial de cada Maçom?", "a": "A Tolerância."}, {"id": 146, "q": "Que exigiram para serdes Maçom?", "a": "Ser livre e de bons costumes."}, {"id": 147, "q": "Qual é o laço que nos une?", "a": "O da Solidariedade."}, {"id": 148, "q": "Como se quebra a cadeia da união?", "a": "Quando um Irmão trilhar os descaminhos do mal e da desonra, por que ao decair quebrou voluntariamente o elo da Fraternidade."}, {"id": 149, "q": "Quais os fundamentos maçônicos da solidariedade?", "a": "A Justiça e a Honestidade."}, {"id": 150, "q": "A que jurisdição pertence a nossa loja, e qual o rito que praticamos?", "a": "Ao Grande Oriente do Brasil, e praticamos o Rito Brasileiro."}]
 </script>
@@ -655,17 +711,22 @@
 (function () {
   "use strict";
 
-  const DECKS = [
+  let DECKS = [
     { key: 'aprendiz', name: 'Aprendiz',
       cards: JSON.parse(document.getElementById('cards-data-aprendiz').textContent) },
     { key: 'companheiro', name: 'Companheiro',
       cards: JSON.parse(document.getElementById('cards-data').textContent) }
   ];
   DECKS.forEach(d => d.cards.forEach(c => { c.deck = d.key; }));
-  const ALL_CARDS = DECKS.reduce((acc, d) => acc.concat(d.cards), []);
+  let ALL_CARDS = DECKS.reduce((acc, d) => acc.concat(d.cards), []);
+  const CFG = window.LUMEN_CONFIG || {};
+  const CLOUD = !!(CFG.SUPABASE_URL && CFG.SUPABASE_KEY);
+  const EMPTY_DECK = { key: '', name: 'Nenhum conjunto', cards: [] };
+  let sb = null, me = null, lastSynced = {}, sbTimer = null;
+  if (CLOUD) { DECKS = []; ALL_CARDS = []; }
   const DECK_KEY = 'flashcards_deck_v1';
   let currentDeck = 'aprendiz';
-  function deckObj(k) { return DECKS.find(d => d.key === (k || currentDeck)) || DECKS[0]; }
+  function deckObj(k) { return DECKS.find(d => d.key === (k || currentDeck)) || DECKS[0] || EMPTY_DECK; }
   function deckCards() { return deckObj().cards; }
   function setDeck(k) {
     currentDeck = deckObj(k).key;
@@ -770,6 +831,7 @@
   }
 
   function schedulePush() {
+    if (CLOUD) { clearTimeout(sbTimer); sbTimer = setTimeout(sbPushProgress, 800); return; }
     if (!dbDoc) return;
     clearTimeout(pushTimer);
     pushTimer = setTimeout(pushNow, 700);
@@ -865,33 +927,55 @@
     study: document.getElementById('screen-study'),
     end: document.getElementById('screen-end'),
     library: document.getElementById('screen-library'),
+    auth: document.getElementById('screen-auth'),
+    admin: document.getElementById('screen-admin'),
   };
   function showScreen(name) {
     Object.values(screens).forEach(s => s.classList.remove('active'));
     screens[name].classList.add('active');
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === (name === 'library' ? 'library' : 'home')));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === (name === 'library' || name === 'admin' ? name : 'home')));
   }
 
   function renderLibrary() {
     const list = document.getElementById('library-list');
     list.innerHTML = '';
+    const u = document.getElementById('lib-user');
+    if (CLOUD && me) {
+      u.style.display = 'flex';
+      u.innerHTML = `<span>${esc(me.email)} · <b>${ROLE_LABEL[me.role] || me.role}</b></span><button class="ghost-btn" id="btn-logout" style="margin:0;padding:4px;">Sair</button>`;
+      document.getElementById('btn-logout').onclick = logout;
+    } else u.style.display = 'none';
+    const nb = document.getElementById('btn-new-content');
+    const hint = document.getElementById('lib-hint');
+    if (!CLOUD) { nb.disabled = true; hint.textContent = 'Criar conteúdos requer login (disponível após conectar o Supabase).'; }
+    else if (!canCreate()) { nb.disabled = true; hint.textContent = 'Seu nível Starter usa os baralhos já cadastrados. Criar baralhos é do nível Prime.'; }
+    else { nb.disabled = false; hint.textContent = ''; }
+    if (!DECKS.length) list.innerHTML = '<div class="lib-meta">Nenhum conjunto disponível ainda.</div>';
     DECKS.forEach(d => {
       const total = d.cards.length;
       const right = d.cards.filter(c => progress[c.id].last === 'right').length;
       const wrong = d.cards.filter(c => progress[c.id].last === 'wrong').length;
       const unseen = d.cards.filter(c => progress[c.id].seen === 0).length;
+      const mine = CLOUD && me && (isAdmin() || d.owner === me.id);
+      const tag = !CLOUD ? '' : d.shared ? ' <span class="lib-badge" style="background:var(--border);color:var(--text-muted);">DO SISTEMA</span>' : ' <span class="lib-badge">MEU</span>';
       const el = document.createElement('div');
       el.className = 'lib-card' + (d.key === currentDeck ? ' current' : '');
-      el.innerHTML = `<div class="lib-top"><div class="lib-name">${d.name}${d.key === currentDeck ? ' <span class="lib-badge">EM USO</span>' : ''}</div><div class="lib-count">${total} cartas</div></div>
+      el.innerHTML = `<div class="lib-top"><div class="lib-name">${esc(d.name)}${d.key === currentDeck ? ' <span class="lib-badge">EM USO</span>' : ''}${tag}</div><div class="lib-count">${total} cartas</div></div>
         <div class="lib-meta">✓ ${right} acertadas · ✕ ${wrong} erradas · ${unseen} ainda não vistas</div>
-        <div class="lib-bar"><div style="width:${Math.round(right / total * 100)}%"></div></div>
-        <button class="primary-btn">Estudar ${d.name}</button>`;
-      el.querySelector('button').addEventListener('click', () => { setDeck(d.key); renderHome(); showScreen('home'); });
+        <div class="lib-bar"><div style="width:${total ? Math.round(right / total * 100) : 0}%"></div></div>
+        <button class="primary-btn" data-act="study" ${total ? '' : 'disabled'}>Estudar ${esc(d.name)}</button>
+        ${mine ? '<div class="btn-row" style="margin:10px 0 0;"><button class="diff-btn" data-act="add">＋ Cartas</button><button class="diff-btn hard" data-act="del">Excluir</button></div>' : ''}`;
+      el.querySelector('[data-act=study]').addEventListener('click', () => { setDeck(d.key); renderHome(); showScreen('home'); });
+      if (mine) {
+        el.querySelector('[data-act=add]').addEventListener('click', () => openContentModal(d));
+        el.querySelector('[data-act=del]').addEventListener('click', () => deleteDeck(d));
+      }
       list.appendChild(el);
     });
   }
   document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => {
     if (b.dataset.tab === 'library') { renderLibrary(); showScreen('library'); }
+    else if (b.dataset.tab === 'admin') { renderAdmin(); showScreen('admin'); }
     else { renderHome(); showScreen('home'); }
   }));
 
@@ -1116,9 +1200,194 @@
   });
 
 
+
+  // ================= NUVEM (Supabase): login, níveis e baralhos =================
+  const ROLE_LABEL = { admin: 'ADMIN', prime: 'PRIME', starter: 'STARTER' };
+  const $id = i => document.getElementById(i);
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+  function isAdmin() { return !!(me && me.role === 'admin'); }
+  function canCreate() { return !!(me && (me.role === 'prime' || me.role === 'admin')); }
+  function authMsg(t) { $id('auth-msg').textContent = t || ''; }
+
+  function setDecks(list) {
+    DECKS = list;
+    ALL_CARDS = DECKS.reduce((acc, d) => acc.concat(d.cards), []);
+    if (!DECKS.find(d => d.key === currentDeck)) currentDeck = DECKS[0] ? DECKS[0].key : '';
+    normalize();
+  }
+
+  async function loadCloudData() {
+    const [dr, pr] = await Promise.all([
+      sb.from('decks').select('id,name,description,owner,is_shared,cards(id,position,question,answer)').order('created_at', { ascending: true }),
+      sb.from('card_progress').select('card_id,difficulty,seen,correct,wrong,last')
+    ]);
+    if (dr.error) throw dr.error;
+    if (pr.error) throw pr.error;
+    const list = dr.data.map(d => ({
+      key: d.id, name: d.name, description: d.description, owner: d.owner, shared: d.is_shared,
+      cards: (d.cards || []).slice().sort((a, b) => a.position - b.position).map(c => ({ id: c.id, q: c.question, a: c.answer, deck: d.id }))
+    }));
+    progress = {}; lastSynced = {};
+    pr.data.forEach(r => {
+      progress[r.card_id] = { difficulty: r.difficulty, seen: r.seen, correct: r.correct, wrong: r.wrong, last: r.last };
+      lastSynced[r.card_id] = JSON.stringify(progress[r.card_id]);
+    });
+    setDecks(list);
+  }
+
+  async function sbPushProgress() {
+    if (!sb || !me) return;
+    const rows = [];
+    ALL_CARDS.forEach(c => {
+      const p = progress[c.id]; if (!p) return;
+      const cur = JSON.stringify(p);
+      if (lastSynced[c.id] === cur) return;
+      if (p.seen === 0 && lastSynced[c.id] === undefined) return;
+      rows.push({ user_id: me.id, card_id: c.id, difficulty: p.difficulty, seen: p.seen, correct: p.correct, wrong: p.wrong, last: p.last, updated_at: new Date().toISOString() });
+    });
+    if (!rows.length) return;
+    const { error } = await sb.from('card_progress').upsert(rows, { onConflict: 'user_id,card_id' });
+    if (!error) rows.forEach(r => { lastSynced[r.card_id] = JSON.stringify(progress[r.card_id]); });
+  }
+
+  function applyRoleUI() {
+    document.querySelectorAll('.tab-btn[data-tab=admin]').forEach(b => { b.style.display = isAdmin() ? '' : 'none'; });
+    document.querySelectorAll('.tabbar').forEach(t => { t.style.gridTemplateColumns = isAdmin() ? '1fr 1fr 1fr' : '1fr 1fr'; });
+  }
+
+  async function enter(user) {
+    try {
+      const { data: prof, error } = await sb.from('profiles').select('email,role').eq('id', user.id).single();
+      if (error) throw error;
+      me = { id: user.id, email: prof.email || user.email, role: prof.role };
+      await loadCloudData();
+      setStatus('cloud'); applyRoleUI(); renderHome(); showScreen('home');
+    } catch (e) {
+      authMsg('Erro ao carregar seus dados: ' + (e.message || e));
+      showScreen('auth');
+    }
+  }
+
+  async function logout() {
+    try { await sbPushProgress(); await sb.auth.signOut(); } catch (e) {}
+    me = null; progress = {}; lastSynced = {}; setDecks([]);
+    authMsg(''); showScreen('auth');
+  }
+
+  async function startCloud() {
+    if (!window.supabase) { authMsg('Não foi possível carregar o Supabase (sem internet?).'); showScreen('auth'); return; }
+    sb = window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_KEY);
+    try {
+      const { data } = await sb.auth.getSession();
+      if (data && data.session) await enter(data.session.user); else showScreen('auth');
+    } catch (e) { authMsg('Erro de conexão: ' + (e.message || e)); showScreen('auth'); }
+  }
+
+  $id('btn-login').addEventListener('click', async () => {
+    if (!sb) return;
+    authMsg('Entrando...');
+    const { data, error } = await sb.auth.signInWithPassword({ email: $id('auth-email').value.trim(), password: $id('auth-pass').value });
+    if (error) { authMsg('Não foi possível entrar: ' + error.message); return; }
+    authMsg(''); await enter(data.user);
+  });
+  $id('btn-signup').addEventListener('click', async () => {
+    if (!sb) return;
+    authMsg('Criando conta...');
+    const { data, error } = await sb.auth.signUp({ email: $id('auth-email').value.trim(), password: $id('auth-pass').value });
+    if (error) { authMsg('Não foi possível criar a conta: ' + error.message); return; }
+    if (data.session) { authMsg(''); await enter(data.user); }
+    else authMsg('Conta criada! Confirme seu e-mail (veja a caixa de entrada e o spam) e depois entre.');
+  });
+  [$id('auth-email'), $id('auth-pass')].forEach(i => i.addEventListener('keydown', e => { if (e.key === 'Enter') $id('btn-login').click(); }));
+
+  // ---- novo conteúdo ----
+  let ncDeck = null;
+  function openContentModal(deck) {
+    ncDeck = deck || null;
+    $id('nc-title').textContent = deck ? '＋ Cartas em ' + deck.name : '＋ Novo conteúdo';
+    $id('nc-name-row').style.display = deck ? 'none' : 'block';
+    $id('nc-system-row').style.display = (!deck && isAdmin()) ? 'flex' : 'none';
+    $id('nc-name').value = ''; $id('nc-text').value = ''; $id('nc-system').checked = false; $id('nc-msg').textContent = '';
+    $id('modal-content').style.display = 'flex';
+  }
+  function parseCards(text) {
+    return text.split(/\r?\n/).map(l => l.trim()).filter(Boolean).map(l => {
+      for (const sep of ['\t', ' | ', '|', ';']) {
+        const i = l.indexOf(sep);
+        if (i > 0) { const q = l.slice(0, i).trim(), a = l.slice(i + sep.length).trim(); return q && a ? { q, a } : null; }
+      }
+      return null;
+    });
+  }
+  async function saveContent() {
+    const msg = t => { $id('nc-msg').textContent = t; };
+    const parsed = parseCards($id('nc-text').value);
+    const valid = parsed.filter(Boolean);
+    if (!valid.length) { msg('Nenhuma carta válida. Use: Pergunta | Resposta (uma por linha).'); return; }
+    let name = '';
+    if (!ncDeck) { name = $id('nc-name').value.trim(); if (!name) { msg('Dê um nome ao conjunto.'); return; } }
+    const btn = $id('nc-save'); btn.disabled = true; msg('Salvando...');
+    try {
+      let deckId, start = 0;
+      if (ncDeck) { deckId = ncDeck.key; start = ncDeck.cards.length; }
+      else {
+        const sys = isAdmin() && $id('nc-system').checked;
+        const { data, error } = await sb.from('decks').insert({ name, owner: sys ? null : me.id, is_shared: sys }).select('id').single();
+        if (error) throw error; deckId = data.id;
+      }
+      const rows = valid.map((c, i) => ({ deck_id: deckId, position: start + i, question: c.q, answer: c.a }));
+      for (let i = 0; i < rows.length; i += 200) {
+        const { error } = await sb.from('cards').insert(rows.slice(i, i + 200));
+        if (error) throw error;
+      }
+      await sbPushProgress(); await loadCloudData();
+      if (!ncDeck) setDeck(deckId);
+      $id('modal-content').style.display = 'none';
+      renderLibrary();
+      const skipped = parsed.length - valid.length;
+      if (skipped) $id('lib-hint').textContent = skipped + ' linha(s) sem separador foram ignoradas.';
+    } catch (e) { msg('Erro: ' + (e.message || e)); }
+    btn.disabled = false;
+  }
+  async function deleteDeck(d) {
+    if (!confirm('Excluir o conjunto "' + d.name + '" e todas as suas cartas? Isso não pode ser desfeito.')) return;
+    const { error } = await sb.from('decks').delete().eq('id', d.key);
+    if (error) { alert('Erro ao excluir: ' + error.message); return; }
+    await sbPushProgress(); await loadCloudData(); renderLibrary();
+  }
+  $id('btn-new-content').addEventListener('click', () => { if (CLOUD && canCreate()) openContentModal(null); });
+  $id('nc-cancel').addEventListener('click', () => { $id('modal-content').style.display = 'none'; });
+  $id('nc-save').addEventListener('click', saveContent);
+  $id('nc-file').addEventListener('change', e => {
+    const f = e.target.files && e.target.files[0]; if (!f) return;
+    const r = new FileReader(); r.onload = () => { $id('nc-text').value = String(r.result || ''); }; r.readAsText(f);
+  });
+
+  // ---- administração ----
+  async function renderAdmin() {
+    const list = $id('admin-list'); list.innerHTML = '<div class="lib-meta">Carregando...</div>'; $id('admin-msg').textContent = '';
+    const { data, error } = await sb.from('profiles').select('id,email,role,created_at').order('created_at', { ascending: true });
+    if (error) { list.innerHTML = ''; $id('admin-msg').textContent = 'Erro: ' + error.message; return; }
+    list.innerHTML = '';
+    data.forEach(p => {
+      const row = document.createElement('div'); row.className = 'admin-row';
+      row.innerHTML = `<span>${esc(p.email)}${p.id === me.id ? ' (você)' : ''}</span>
+        <select>${['starter', 'prime', 'admin'].map(r => `<option value="${r}" ${r === p.role ? 'selected' : ''}>${ROLE_LABEL[r]}</option>`).join('')}</select>`;
+      const sel = row.querySelector('select');
+      sel.addEventListener('change', async () => {
+        if (p.id === me.id && sel.value !== 'admin' && !confirm('Você vai deixar de ser administrador. Continuar?')) { sel.value = p.role; return; }
+        const { error: e2 } = await sb.from('profiles').update({ role: sel.value }).eq('id', p.id);
+        if (e2) { sel.value = p.role; $id('admin-msg').textContent = 'Erro: ' + e2.message; return; }
+        p.role = sel.value; $id('admin-msg').textContent = '✓ Nível de ' + p.email + ' alterado para ' + ROLE_LABEL[p.role] + '.';
+        if (p.id === me.id) { me.role = p.role; applyRoleUI(); }
+      });
+      list.appendChild(row);
+    });
+  }
+
   // Init
-  loadProgress();
   const storageOk = storageWorks();
+  if (!CLOUD) loadProgress();
   setStatus(storageOk ? 'local' : 'nolocal');
   if (storageOk && navigator.storage && navigator.storage.persist) {
     try { navigator.storage.persist(); } catch (e) {}
@@ -1126,7 +1395,7 @@
   initCloud();
   window.addEventListener('pagehide', saveProgress);
   document.addEventListener('visibilitychange', () => { if (document.hidden) saveProgress(); });
-  renderHome();
+  if (CLOUD) { $id("btn-backup").style.display = "none"; screens.home.classList.remove("active"); startCloud(); } else { renderHome(); }
 })();
 </script>
 </body>

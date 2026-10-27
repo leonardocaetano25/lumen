@@ -1,27 +1,43 @@
 # Lumen · flashcards de estudo
 
-Site estático (um único `index.html`). Sem build, sem dependências.
+Site estático (um `index.html` + `config.js`). Sem build, sem dependências para instalar.
+Sem Supabase configurado, o app funciona só no navegador (sem login), com os conjuntos Aprendiz e Companheiro embutidos.
 
-## Colocar online agora (mais rápido, 2 minutos)
-1. Acesse https://app.netlify.com/drop (entre com sua conta Netlify).
-2. Arraste a **pasta inteira** `lumen-projeto` para a página.
-3. A Netlify devolve um link `https://nome-aleatorio.netlify.app`. Pode trocar o nome em *Site configuration > Change site name*.
+## Níveis de acesso (quando o Supabase está ligado)
+| Nível | Pode |
+|---|---|
+| **Starter** (padrão de quem cria conta) | Estudar os baralhos já cadastrados (do sistema). Não cria nem exclui baralhos. |
+| **Prime** | Estudar, criar baralhos, adicionar cartas e excluir **os seus** baralhos. Os baralhos do Prime são privados: só ele os vê e as alterações afetam só a conta dele. |
+| **Admin** | Controla tudo: todos os baralhos, baralhos do sistema e o nível de cada usuário (aba **Admin**). |
 
-## Com GitHub (recomendado: cada alteração publica sozinha)
-1. Crie um repositório vazio no GitHub, por exemplo `lumen`.
-2. Na pasta do projeto, rode:
+O progresso de estudo (acertos, erros, dificuldade) é sempre individual, de cada conta.
+
+## 1. Colocar o site no ar (Netlify)
+Arraste a pasta `lumen-projeto` (descompactada) em https://app.netlify.com/drop, ou ligue o repositório do GitHub à Netlify (publicação automática a cada alteração).
+Guarde o endereço do site, por exemplo `https://lumen.netlify.app`.
+
+## 2. Ligar o banco e o login (Supabase)
+1. Crie um projeto em https://supabase.com/dashboard.
+2. **SQL Editor > New query**: cole `supabase/schema.sql` e clique **Run**.
+3. Nova query: cole `supabase/seed.sql` e **Run** (cria os baralhos Aprendiz e Companheiro como baralhos do sistema). Rode uma vez só.
+4. **Authentication > URL Configuration**: em *Site URL*, coloque o endereço do seu site (Netlify). Isso faz o link do e-mail de confirmação abrir o Lumen.
+5. Abra o site, toque em **Criar conta** e confirme o e-mail.
+6. De volta ao SQL Editor, torne-se administrador (troque o e-mail):
+   `update public.profiles set role = 'admin' where email = 'SEU_EMAIL@exemplo.com';`
+7. Em **Project Settings > API Keys**, copie a **Project URL** e a chave **publishable** (ou anon). Cole no `config.js`:
+   ```js
+   window.LUMEN_CONFIG = { SUPABASE_URL: "https://xxxx.supabase.co", SUPABASE_KEY: "sb_publishable_..." };
    ```
-   git init && git add . && git commit -m "Lumen: primeira versão"
-   git branch -M main
-   git remote add origin https://github.com/SEU_USUARIO/lumen.git
-   git push -u origin main
-   ```
-3. Na Netlify: *Add new site > Import an existing project > GitHub* > escolha `lumen`. Deixe o build command vazio e o publish directory como `.` (já está no `netlify.toml`).
-4. Daí em diante, todo `git push` publica a nova versão.
+   Nunca use a chave `secret` / `service_role` aí.
+8. Publique de novo (Netlify Drop ou `git push`). Pronto: o app pede login.
 
-## iPhone: ícone e tela cheia
-Com o site no ar, abra o link no Safari > Compartilhar > **Adicionar à Tela de Início**. O ícone do Lumen (`apple-touch-icon.png`) é usado automaticamente e o app abre em tela cheia.
-Num site próprio o navegador guarda o progresso de forma bem mais confiável do que dentro do Claude.
+Dica: o login funciona antes do passo 7 só se o `config.js` estiver preenchido; sem ele o app roda em modo local.
 
-## Supabase (próxima etapa)
-`supabase/schema.sql` tem as tabelas de conjuntos, cartas e progresso, com segurança por usuário. Ele só será usado depois que o app for ligado ao Supabase (login, conteúdos na nuvem e progresso sincronizado).
+## Gerenciar usuários
+Como admin, abra a aba **Admin** para mudar o nível de cada pessoa (Starter, Prime, Admin). Quem cria conta entra como Starter.
+
+## Adicionar conteúdo novo
+Prime e Admin: aba **Meus conteúdos > ＋ Novo conteúdo**. Uma carta por linha: `Pergunta | Resposta` (também aceita colar de planilha ou carregar um .txt/.csv). Admin pode marcar "Baralho do sistema" para todos verem.
+
+## iPhone
+Com o site no ar: Safari > Compartilhar > **Adicionar à Tela de Início**. O ícone do Lumen é usado automaticamente.
