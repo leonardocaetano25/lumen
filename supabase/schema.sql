@@ -6,12 +6,16 @@
 --   drop table if exists public.card_progress, public.cards, public.decks, public.profiles cascade;
 
 -- ===== Tabelas =====
+-- (este arquivo pode ser rodado de novo sem problema)
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   email text,
+  full_name text,
   role text not null default 'starter' check (role in ('admin','starter','prime')),
   created_at timestamptz not null default now()
 );
+
+alter table public.profiles add column if not exists full_name text;
 
 create table if not exists public.decks (
   id uuid primary key default gen_random_uuid(),
@@ -49,11 +53,11 @@ language sql stable security definer set search_path = public as $$
   select role from public.profiles where id = auth.uid()
 $$;
 
--- ===== Todo novo usuário nasce Starter =====
+-- ===== Todo novo usuário nasce Starter (o nível é mudado pelo admin; nunca vem de dados do cadastro) =====
 create or replace function public.handle_new_user() returns trigger
 language plpgsql security definer set search_path = public as $$
 begin
-  insert into public.profiles (id, email) values (new.id, new.email) on conflict do nothing;
+  insert into public.profiles (id, email, full_name) values (new.id, new.email, new.raw_user_meta_data->>'full_name') on conflict do nothing;
   return new;
 end $$;
 
