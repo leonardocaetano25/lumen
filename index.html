@@ -486,6 +486,9 @@
   .lib-meta { font-size: 0.78rem; color: var(--text-muted); margin: 8px 0 10px; line-height: 1.5; }
   .lib-bar { height: 7px; background: var(--border); border-radius: 99px; overflow: hidden; margin-bottom: 12px; }
   .lib-bar > div { height: 100%; background: linear-gradient(90deg, #C9A227, #F0D26B); border-radius: 99px; }
+  .deck-current { display: inline-block; font-size: 0.8rem; color: var(--text-muted); background: var(--bg-2); border: 1px solid rgba(212, 175, 55, 0.4); border-radius: 99px; padding: 6px 14px; margin-bottom: 14px; }
+  .deck-current b { color: #E9C85A; }
+  .lib-badge { font-family: var(--font-ui); font-size: 0.6rem; font-weight: 800; letter-spacing: 0.06em; color: #15110A; background: linear-gradient(135deg, #C9A227, #F0D26B); border-radius: 99px; padding: 2px 8px; vertical-align: middle; margin-left: 6px; }
 </style>
 </head>
 <body>
@@ -506,8 +509,7 @@
       <button class="tab-btn" data-tab="library">🗂 Meus conteúdos</button>
     </div>
 
-    <div class="section-title">Conjunto de cartas</div>
-    <div class="deck-switch" id="deck-switch"></div>
+    <div class="deck-current" id="deck-current"></div>
 
     <div class="hero">
       <div class="big-num" id="home-total">50</div>
@@ -874,7 +876,7 @@
       const unseen = d.cards.filter(c => progress[c.id].seen === 0).length;
       const el = document.createElement('div');
       el.className = 'lib-card' + (d.key === currentDeck ? ' current' : '');
-      el.innerHTML = `<div class="lib-top"><div class="lib-name">${d.name}</div><div class="lib-count">${total} cartas</div></div>
+      el.innerHTML = `<div class="lib-top"><div class="lib-name">${d.name}${d.key === currentDeck ? ' <span class="lib-badge">EM USO</span>' : ''}</div><div class="lib-count">${total} cartas</div></div>
         <div class="lib-meta">✓ ${right} acertadas · ✕ ${wrong} erradas · ${unseen} ainda não vistas</div>
         <div class="lib-bar"><div style="width:${Math.round(right / total * 100)}%"></div></div>
         <button class="primary-btn">Estudar ${d.name}</button>`;
@@ -900,16 +902,7 @@
   function renderHome() {
     document.getElementById('home-total').textContent = deckCards().length;
     document.getElementById('home-label').textContent = 'cartas no conjunto ' + deckObj().name;
-    const sw = document.getElementById('deck-switch');
-    sw.innerHTML = '';
-    DECKS.forEach(d => {
-      const wrong = d.cards.filter(c => progress[c.id].last === 'wrong').length;
-      const b = document.createElement('div');
-      b.className = 'deck-btn' + (d.key === currentDeck ? ' selected' : '');
-      b.innerHTML = `<div class="dname">${d.name}</div><div class="dinfo">${d.cards.length} cartas · ${wrong} errada${wrong === 1 ? '' : 's'}</div>`;
-      b.addEventListener('click', () => { setDeck(d.key); renderHome(); });
-      sw.appendChild(b);
-    });
+    document.getElementById('deck-current').innerHTML = 'Conjunto em uso: <b>' + deckObj().name + '</b>';
     document.getElementById('cnt-easy').textContent = countByFilter('easy');
     document.getElementById('cnt-medium').textContent = countByFilter('medium');
     document.getElementById('cnt-hard').textContent = countByFilter('hard');
